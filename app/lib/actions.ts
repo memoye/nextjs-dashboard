@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { signIn } from '@/auth';
+import { AuthError } from 'next-auth';
 
 const InvoiceSchema = z.object({
   id: z.string(),
@@ -134,4 +136,24 @@ export async function deleteInvoice(id: string) {
    * you don't need to call redirect.
    * Calling revalidatePath will trigger a new server request and re-render the table.
    */
+}
+
+export async function authenticate(
+  prevState: string | undefined,
+  formData: FormData,
+) {
+  try {
+    await signIn('credentials', formData);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      // You can learn about NextAuth.js errors in the docs --> https://errors.authjs.dev/
+      switch (error.type) {
+        case 'CredentialsSignin':
+          return 'Invalid credentials';
+        default:
+          return 'something went wrong.';
+      }
+    }
+    throw error;
+  }
 }
